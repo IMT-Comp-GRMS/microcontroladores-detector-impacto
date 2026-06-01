@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ImpactOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{
+  --bg:#0a0c0f; --surface:#111318; --surface2:#181c23; --border:#1e2530;
+  --accent:#f0a500; --accent2:#e05c00; --danger:#ff2d2d; --ok:#00d68f;
+  --muted:#3a4455; --text:#c8d6e8; --text-dim:#5a6880;
+  --mono:'Share Tech Mono',monospace; --sans:'Barlow',sans-serif; --cond:'Barlow Condensed',sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999;}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;padding-top:calc(12px + var(--safe-top));
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,#0d0f14,#111318);
+  position:sticky;top:0;z-index:100;
+}
+.logo-main{font-family:var(--cond);font-size:22px;font-weight:900;letter-spacing:3px;color:var(--accent);}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;display:none;}
+.hdr-r{display:flex;align-items:center;gap:8px;}
+
+/* ── STATUS CHIPS ── */
+.chips{display:flex;gap:8px;}
+.chip{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.5px;}
+.chip .label{display:none;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.on {background:var(--ok);    box-shadow:0 0 7px var(--ok);   animation:bl 2s infinite;}
+.dot.warn{background:var(--accent);box-shadow:0 0 7px var(--accent);animation:bl 1s infinite;}
+.dot.err {background:var(--danger);box-shadow:0 0 7px var(--danger);animation:bl .5s infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;border:1px solid;padding:7px 12px;cursor:pointer;transition:all .2s;background:transparent;border-radius:0;white-space:nowrap;}
+.btn-ble{border-color:var(--accent);color:var(--accent);}
+.btn-ble:active{background:var(--accent);color:var(--bg);}
+.btn-ble.disc{border-color:var(--danger);color:var(--danger);}
+.btn-sim{border-color:var(--muted);color:var(--text-dim);font-size:9px;}
+.btn-sim:active{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── MOBILE TABS ── */
+.tab-bar{
+  display:flex;background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:57px;z-index:99;overflow-x:auto;scrollbar-width:none;
+}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:60px;padding:10px 6px;font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--text-dim);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px;padding-bottom:calc(14px + var(--safe-bot));}
+.page.active{display:block;}
+
+/* ── PANEL LABEL ── */
+.plbl{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+
+/* ── G-METER ── */
+.g-hero{display:flex;align-items:center;justify-content:center;gap:16px;margin:8px 0 14px;}
+.g-num{font-family:var(--mono);font-size:72px;line-height:1;color:var(--ok);transition:color .15s,text-shadow .15s;}
+.g-num.warn{color:var(--accent);}
+.g-num.crit{color:var(--danger);text-shadow:0 0 28px rgba(255,45,45,.6);}
+.g-side{display:flex;flex-direction:column;gap:4px;}
+.g-unit{font-family:var(--mono);font-size:13px;color:var(--text-dim);letter-spacing:3px;}
+.g-bar-wrap{height:5px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;margin:0 0 14px;}
+.g-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--ok) 0%,var(--accent) 60%,var(--danger) 100%);transition:width .12s;}
+
+.axes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.ax-box{background:var(--surface2);border:1px solid var(--border);padding:10px 8px;text-align:center;}
+.ax-lbl{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;display:block;margin-bottom:4px;}
+.ax-val{font-family:var(--mono);font-size:20px;color:var(--text);}
+
+.thr-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 10px;background:var(--surface2);border:1px solid var(--border);}
+.thr-row span{color:var(--accent);font-size:13px;}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);padding:12px 10px;}
+.slbl{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px;}
+.sval{font-family:var(--mono);font-size:24px;color:var(--text);}
+.sval.acc{color:var(--accent);} .sval.red{color:var(--danger);}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;height:200px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;margin-bottom:14px;}
+canvas{width:100%!important;height:100%!important;}
+.chart-badge{position:absolute;top:7px;left:8px;font-family:var(--mono);font-size:9px;color:var(--text-dim);pointer-events:none;}
+.thr-lbl{position:absolute;right:6px;font-family:var(--mono);font-size:9px;color:var(--accent);pointer-events:none;transition:top .3s;}
+
+/* ── GPS ── */
+.gps-card{background:var(--surface2);border:1px solid var(--border);padding:14px;margin-bottom:10px;}
+.gps-rows{font-family:var(--mono);font-size:12px;color:var(--text-dim);display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.gps-item{display:flex;flex-direction:column;gap:3px;}
+.gps-key{font-size:9px;letter-spacing:2px;}
+.gps-val{color:var(--ok);font-size:16px;} .gps-val.none{color:var(--text-dim);}
+.no-sig{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;}
+
+/* ── MAP ── */
+#map{height:300px;border:1px solid var(--border);filter:grayscale(50%) brightness(.72) hue-rotate(180deg);}
+
+/* ── LOG ── */
+.log-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.btn-clr{font-family:var(--mono);font-size:9px;letter-spacing:1px;border:1px solid var(--muted);color:var(--text-dim);padding:5px 10px;cursor:pointer;background:transparent;}
+.btn-clr:active{border-color:var(--danger);color:var(--danger);}
+.log-empty{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:24px;}
+
+/* Mobile log cards instead of table */
+.log-cards{display:flex;flex-direction:column;gap:8px;}
+.log-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--muted);padding:10px 12px;}
+.log-card.high{border-left-color:var(--danger);}
+.log-card.med {border-left-color:var(--accent2);}
+.log-card.low {border-left-color:var(--accent);}
+.log-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.log-card-id{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+.log-card-g{font-family:var(--mono);font-size:20px;color:var(--accent);}
+.log-card-bot{font-family:var(--mono);font-size:9px;color:var(--text-dim);line-height:1.8;}
+.badge{display:inline-block;padding:2px 7px;font-size:9px;letter-spacing:1px;border:1px solid;}
+.badge.low{color:var(--accent);border-color:var(--accent);}
+.badge.med{color:var(--accent2);border-color:var(--accent2);}
+.badge.high{color:var(--danger);border-color:var(--danger);}
+
+/* ── FMT BOX ── */
+.fmt-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;}
+.fmt-box strong{color:var(--accent);}
+.fmt-box code{color:#7ec8a0;word-break:break-all;font-size:9px;}
+
+/* ── FLASH / TOAST ── */
+#flash{position:fixed;inset:0;background:rgba(255,45,45,.15);pointer-events:none;z-index:9998;opacity:0;transition:opacity .08s;}
+#flash.on{opacity:1;}
+#toast{position:fixed;bottom:calc(20px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:9px 16px;z-index:9999;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── DESKTOP OVERRIDES ── */
+@media(min-width:700px){
+  header{padding:14px 28px;}
+  .logo-sub{display:block;}
+  .chip .label{display:inline;}
+  .tab-bar{display:none;}
+  .page{display:block!important;padding:0;}
+
+  main.desktop{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    grid-template-rows:auto auto auto;
+    gap:1px;background:var(--border);
+    min-height:calc(100vh - 61px);
+  }
+  .sidebar{grid-column:1;grid-row:1/4;display:flex;flex-direction:column;gap:1px;background:var(--border);}
+  .sidebar .page{padding:18px 20px;flex:1;display:block;}
+  .col-right{grid-column:2;display:flex;flex-direction:column;gap:1px;background:var(--border);}
+  .col-right .page{padding:18px 20px;background:var(--surface);}
+  .g-num{font-size:60px;}
+  #map{height:240px;}
+  .chart-wrap{height:190px;}
+  .gps-rows{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+
+<header>
+  <div>
+    <div class="logo-main">ImpactOS</div>
+    <div class="logo-sub">// Pi Pico · MPU-6050 · HC-08 · NEO-6M</div>
+  </div>
+  <div class="hdr-r">
+    <div class="chips">
+      <div class="chip"><div class="dot" id="dotBle"></div><span class="label" id="lblBle">DESCONECTADO</span></div>
+      <div class="chip"><div class="dot" id="dotGps"></div><span class="label" id="lblGps">SEM SINAL</span></div>
+    </div>
+    <button class="btn btn-sim" id="btnSim" onclick="toggleSim()">▶ SIM</button>
+    <button class="btn btn-ble" id="btnBle" onclick="toggleBLE()">BLE</button>
+  </div>
+</header>
+
+<!-- MOBILE TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="showTab('pg-meter',this)">G-METER</div>
+  <div class="tab" onclick="showTab('pg-chart',this)">GRÁFICO</div>
+  <div class="tab" onclick="showTab('pg-gps',this)">GPS</div>
+  <div class="tab" onclick="showTab('pg-map',this)">MAPA</div>
+  <div class="tab" onclick="showTab('pg-log',this)">LOG</div>
+</div>
+
+<!-- MOBILE: single column pages / DESKTOP: grid layout -->
+<main class="desktop">
+
+  <!-- SIDEBAR (desktop) / individual pages (mobile) -->
+  <div class="sidebar">
+
+    <!-- G-METER PAGE -->
+    <div class="page active" id="pg-meter" style="background:var(--surface)">
+      <div class="plbl">// G-METER INSTANTÂNEO</div>
+      <div class="g-hero">
+        <span class="g-num" id="gNum">0.00</span>
+        <div class="g-side">
+          <span class="g-unit">G</span>
+        </div>
+      </div>
+      <div class="g-bar-wrap"><div class="g-bar" id="gBar"></div></div>
+      <div class="axes">
+        <div class="ax-box"><span class="ax-lbl">EIXO X</span><span class="ax-val" id="axX">0.00</span></div>
+        <div class="ax-box"><span class="ax-lbl">EIXO Y</span><span class="ax-val" id="axY">0.00</span></div>
+        <div class="ax-box"><span class="ax-lbl">EIXO Z</span><span class="ax-val" id="axZ">1.00</span></div>
+      </div>
+      <div class="thr-row">LIMITE (FIRMWARE) <span id="thVal">2.5</span>G</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="slbl">IMPACTOS</div><div class="sval red" id="sImpacts">0</div></div>
+        <div class="stat-box"><div class="slbl">PICO (G)</div><div class="sval acc" id="sPeak">0.00</div></div>
+        <div class="stat-box"><div class="slbl">UPTIME</div><div class="sval" id="sTime">00:00</div></div>
+        <div class="stat-box"><div class="slbl">AMOSTRAS</div><div class="sval" id="sSamp">0</div></div>
+      </div>
+    </div>
+
+    <!-- GPS PAGE (sidebar on desktop) -->
+    <div class="page" id="pg-gps" style="background:var(--surface)">
+      <div class="plbl">// GPS — NEO-6M</div>
+      <div class="gps-card">
+        <div class="gps-rows">
+          <div class="gps-item"><span class="gps-key">LATITUDE</span><span class="gps-val none" id="gLat">---</span></div>
+          <div class="gps-item"><span class="gps-key">LONGITUDE</span><span class="gps-val none" id="gLng">---</span></div>
+          <div class="gps-item"><span class="gps-key">ALTITUDE</span><span class="gps-val none" id="gAlt">--- m</span></div>
+          <div class="gps-item"><span class="gps-key">SATÉLITES</span><span class="gps-val none" id="gSat">0</span></div>
+        </div>
+        <div class="no-sig" id="noSig"><div class="dot warn"></div> AGUARDANDO SATÉLITES...</div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- RIGHT COLUMN -->
+  <div class="col-right">
+
+    <!-- CHART PAGE -->
+    <div class="page" id="pg-chart" style="background:var(--surface)">
+      <div class="plbl">// ACELERAÇÃO — TEMPO REAL</div>
+      <div class="fmt-box">
+        <strong>FORMATO ESPERADO</strong><br>
+        <code>MONITOR|G:1.02|AX:0.10|AY:-0.05|AZ:0.98|LAT:-23.55|LNG:-46.63|ALT:760.0|SAT:6|GPS:OK|THR:2.50</code>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="cv"></canvas>
+        <div class="chart-badge">ACELERAÇÃO (G)</div>
+        <div class="thr-lbl" id="thLbl">LIMITE</div>
+      </div>
+    </div>
+
+    <!-- MAP PAGE -->
+    <div class="page" id="pg-map" style="background:var(--surface)">
+      <div class="plbl">// MAPA — ÚLTIMO IMPACTO</div>
+      <div id="map"></div>
+    </div>
+
+    <!-- LOG PAGE -->
+    <div class="page" id="pg-log" style="background:var(--surface)">
+      <div class="log-hdr">
+        <div class="plbl" style="margin:0">// HISTÓRICO DE IMPACTOS</div>
+        <button class="btn-clr" onclick="clearLog()">LIMPAR</button>
+      </div>
+      <div id="logWrap"><div class="log-empty">[ NENHUM IMPACTO REGISTRADO ]</div></div>
+    </div>
+
+  </div><!-- /col-right -->
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────
+const S={
+  thresh:2.5, impacts:[], impactCount:0, peakG:0, samples:0,
+  sessionStart:Date.now(), chartData:[], chartMax:150,
+  connected:false, simulating:false, bleDevice:null, inCooldown:false,
+  gps:{lat:null,lng:null,alt:null,sat:0,ok:false}
+};
+
+// ── TABS (mobile) ─────────────────────────────────────────────────
+function showTab(pageId, tabEl){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  tabEl.classList.add('active');
+  if(pageId==='pg-map') setTimeout(()=>map.invalidateSize(),100);
+  if(pageId==='pg-chart') resizeCv();
+}
+
+// ── CHART ─────────────────────────────────────────────────────────
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function resizeCv(){const p=cv.parentElement;cv.width=p.clientWidth;cv.height=p.clientHeight;}
+resizeCv();window.addEventListener('resize',resizeCv);
+function drawChart(){
+  resizeCv();
+  const w=cv.width,h=cv.height,maxG=Math.max(S.thresh*1.6,6),pts=S.chartData;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(30,37,48,.8)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=(i/4)*h;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    ctx.fillStyle='rgba(90,104,128,.5)';ctx.font='9px Share Tech Mono';
+    ctx.fillText((maxG-i/4*maxG).toFixed(1)+'G',4,y-3);
+  }
+  const ty=h-(S.thresh/maxG)*h;
+  ctx.strokeStyle='rgba(240,165,0,.35)';ctx.setLineDash([6,4]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(w,ty);ctx.stroke();ctx.setLineDash([]);
+  document.getElementById('thLbl').style.top=Math.max(4,ty-16)+'px';
+  if(pts.length>=2){
+    const gr=ctx.createLinearGradient(0,0,0,h);
+    gr.addColorStop(0,'rgba(255,45,45,.28)');gr.addColorStop(.5,'rgba(240,165,0,.1)');gr.addColorStop(1,'rgba(0,214,143,.02)');
+    ctx.beginPath();
+    pts.forEach((g,i)=>{const x=(i/(S.chartMax-1))*w,y=h-(Math.min(g,maxG)/maxG)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.lineTo((pts.length-1)/(S.chartMax-1)*w,h);ctx.lineTo(0,h);ctx.closePath();
+    ctx.fillStyle=gr;ctx.fill();
+    ctx.beginPath();
+    pts.forEach((g,i)=>{const x=(i/(S.chartMax-1))*w,y=h-(Math.min(g,maxG)/maxG)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.strokeStyle='#00d68f';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  requestAnimationFrame(drawChart);
+}
+drawChart();
+
+// ── MAP ───────────────────────────────────────────────────────────
+const map=L.map('map').setView([-23.5505,-46.6333],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+let mkr=null,circ=null;
+const ico=L.divIcon({className:'',html:'<div style="width:14px;height:14px;background:#ff2d2d;border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px #ff2d2d"></div>',iconSize:[14,14],iconAnchor:[7,7]});
+function plotImpact(lat,lng,g){
+  if(mkr)map.removeLayer(mkr);if(circ)map.removeLayer(circ);
+  mkr=L.marker([lat,lng],{icon:ico}).addTo(map)
+    .bindPopup(`<b style="font-family:monospace">${g.toFixed(2)}G</b><br><span style="font-family:monospace;font-size:10px">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>`)
+    .openPopup();
+  circ=L.circle([lat,lng],{radius:25,color:'#ff2d2d',fillColor:'#ff2d2d',fillOpacity:.1,weight:1}).addTo(map);
+  map.flyTo([lat,lng],15,{duration:1.5});
+}
+
+// ── PARSER ────────────────────────────────────────────────────────
+let bleBuf='';
+function parseLine(raw){
+  const line=raw.trim();
+  if(!line||(!line.startsWith('MONITOR|')&&!line.startsWith('IMPACT|')))return;
+  const isImpact=line.startsWith('IMPACT|');
+  const getF=k=>{const m=line.match(new RegExp(k+':([\\+\\-]?[\\d\\.]+)'));return m?parseFloat(m[1]):null;};
+  const getS=k=>{const m=line.match(new RegExp(k+':([A-Z_]+)'));return m?m[1]:null;};
+  const g=getF('G'),ax=getF('AX'),ay=getF('AY'),az=getF('AZ');
+  const lat=getF('LAT'),lng=getF('LNG'),alt=getF('ALT'),sat=getF('SAT'),thr=getF('THR');
+  const gpsTag=getS('GPS');
+  if(thr!==null&&thr!==S.thresh){S.thresh=thr;document.getElementById('thVal').textContent=thr.toFixed(1);}
+  if(g!==null)updateG(g,ax,ay,az);
+  if(lat!==null&&lng!==null&&lat!==0&&lng!==0)updateGPS(lat,lng,alt,sat,gpsTag==='OK');
+  else if(sat!==null)document.getElementById('gSat').textContent=sat;
+  if(isImpact&&g!==null)fireImpact(g,ax||0,ay||0,az||0,lat,lng);
+}
+
+// ── G-METER ───────────────────────────────────────────────────────
+function updateG(g,ax,ay,az){
+  S.samples++;if(g>S.peakG)S.peakG=g;
+  S.chartData.push(g);if(S.chartData.length>S.chartMax)S.chartData.shift();
+  const el=document.getElementById('gNum');
+  el.textContent=g.toFixed(2);
+  el.className='g-num'+(g>S.thresh?' crit':g>S.thresh*.75?' warn':'');
+  document.getElementById('gBar').style.width=Math.min((g/Math.max(S.thresh*1.6,6))*100,100)+'%';
+  if(ax!==null){
+    document.getElementById('axX').textContent=ax.toFixed(2);
+    document.getElementById('axY').textContent=(ay||0).toFixed(2);
+    document.getElementById('axZ').textContent=(az||0).toFixed(2);
+  }
+  document.getElementById('sPeak').textContent=S.peakG.toFixed(2);
+  document.getElementById('sSamp').textContent=S.samples;
+  if(g>=S.thresh&&!S.inCooldown){
+    S.inCooldown=true;setTimeout(()=>S.inCooldown=false,3000);
+    fireImpact(g,ax||0,ay||0,az||0,S.gps.lat,S.gps.lng);
+  }
+}
+
+// ── GPS ───────────────────────────────────────────────────────────
+function updateGPS(lat,lng,alt,sat,ok){
+  S.gps={lat,lng,alt,sat:sat||0,ok};
+  const setV=(id,v)=>{const el=document.getElementById(id);el.textContent=v;el.className='gps-val';};
+  setV('gLat',lat.toFixed(6));setV('gLng',lng.toFixed(6));
+  setV('gAlt',(alt!==null?alt.toFixed(0):'---')+' m');setV('gSat',sat||0);
+  document.getElementById('dotGps').className='dot'+(ok?' on':' warn');
+  document.getElementById('lblGps').textContent=ok?'GPS FIX':`GPS ${sat||0}SAT`;
+  document.getElementById('noSig').style.display=ok?'none':'flex';
+}
+
+// ── IMPACT ────────────────────────────────────────────────────────
+function fireImpact(g,ax,ay,az,lat,lng){
+  S.impactCount++;document.getElementById('sImpacts').textContent=S.impactCount;
+  const f=document.getElementById('flash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),180);
+  const la=(lat&&lat!==0)?lat:(S.gps.lat||-23.5505);
+  const lo=(lng&&lng!==0)?lng:(S.gps.lng||-46.6333);
+  plotImpact(la,lo,g);
+  const sev=g>S.thresh*2?'high':g>S.thresh*1.3?'med':'low';
+  S.impacts.unshift({id:S.impactCount,time:new Date().toLocaleTimeString('pt-BR'),g,ax,ay,az,lat:la,lng:lo,sev});
+  renderLog();
+  toast(`⚡ IMPACTO — ${g.toFixed(2)}G`);
+}
+
+// ── LOG ───────────────────────────────────────────────────────────
+function renderLog(){
+  const w=document.getElementById('logWrap');
+  if(!S.impacts.length){w.innerHTML='<div class="log-empty">[ NENHUM IMPACTO REGISTRADO ]</div>';return;}
+  const cards=S.impacts.slice(0,40).map(e=>`
+    <div class="log-card ${e.sev}">
+      <div class="log-card-top">
+        <span class="log-card-id">#${e.id} · ${e.time}</span>
+        <span class="log-card-g">${e.g.toFixed(2)}G</span>
+        <span class="badge ${e.sev}">${e.sev==='med'?'MEDIUM':e.sev.toUpperCase()}</span>
+      </div>
+      <div class="log-card-bot">
+        X:${e.ax.toFixed(2)} Y:${e.ay.toFixed(2)} Z:${e.az.toFixed(2)}<br>
+        ${e.lat.toFixed(5)}, ${e.lng.toFixed(5)}
+      </div>
+    </div>`).join('');
+  w.innerHTML=`<div class="log-cards">${cards}</div>`;
+}
+
+function clearLog(){
+  Object.assign(S,{impacts:[],impactCount:0,peakG:0,samples:0,sessionStart:Date.now()});
+  document.getElementById('sImpacts').textContent='0';
+  document.getElementById('sPeak').textContent='0.00';
+  document.getElementById('sSamp').textContent='0';
+  renderLog();
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────
+setInterval(()=>{
+  const s=Math.floor((Date.now()-S.sessionStart)/1000);
+  document.getElementById('sTime').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+},1000);
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastTm;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTm);toastTm=setTimeout(()=>t.classList.remove('show'),3500);}
+
+// ── SIMULATION ────────────────────────────────────────────────────
+let simIv,simPh=0;
+function toggleSim(){
+  if(S.simulating){
+    clearInterval(simIv);S.simulating=false;
+    document.getElementById('btnSim').textContent='▶ SIM';toast('SIMULAÇÃO ENCERRADA');
+  } else {
+    S.simulating=true;document.getElementById('btnSim').textContent='■ STOP';toast('SIMULAÇÃO INICIADA');
+    updateGPS(-23.5505,-46.6333,760,8,true);
+    simIv=setInterval(()=>{
+      simPh+=0.09;
+      const base=0.9+0.25*Math.sin(simPh*.8),noise=(Math.random()-.5)*.35;
+      const spike=Math.random()<0.022?S.thresh+(Math.random()*S.thresh*1.8):0;
+      const g=Math.max(0,base+noise+spike);
+      const ax=0.08*Math.sin(simPh*1.3)+(Math.random()-.5)*.08;
+      const ay=0.08*Math.cos(simPh*.9)+(Math.random()-.5)*.08;
+      const az=Math.sqrt(Math.max(0,g*g-ax*ax-ay*ay));
+      const lat=-23.5505+(Math.random()-.5)*.002,lng=-46.6333+(Math.random()-.5)*.002;
+      parseLine(`${spike>0?'IMPACT':'MONITOR'}|G:${g.toFixed(3)}|AX:${ax.toFixed(3)}|AY:${ay.toFixed(3)}|AZ:${az.toFixed(3)}|LAT:${lat.toFixed(6)}|LNG:${lng.toFixed(6)}|ALT:760.0|SAT:8|GPS:OK|THR:${S.thresh.toFixed(2)}`);
+    },85);
+  }
+}
+
+// ── WEB BLUETOOTH ─────────────────────────────────────────────────
+const SVC='0000ffe0-0000-1000-8000-00805f9b34fb',CHAR='0000ffe1-0000-1000-8000-00805f9b34fb';
+async function toggleBLE(){
+  if(S.connected){disconnectBLE();return;}
+  if(!navigator.bluetooth){toast('USE WEBBLE OU CHROME/EDGE');return;}
+  try{
+    toast('PROCURANDO DISPOSITIVO...');
+    const dev=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[SVC]
+    });
+    S.bleDevice=dev;dev.addEventListener('gattserverdisconnected',onDisc);
+    const srv=await dev.gatt.connect();
+    const svc=await srv.getPrimaryService(SVC);
+    const chr=await svc.getCharacteristic(CHAR);
+    await chr.startNotifications();
+    chr.addEventListener('characteristicvaluechanged',onBLEData);
+    setBLE(true);toast(`✓ ${dev.name}`);
+  }catch(e){toast(e.name==='NotFoundError'?'CANCELADO':'ERRO: '+e.message);}
+}
+function onBLEData(e){
+  bleBuf+=new TextDecoder().decode(e.target.value);
+  const lines=bleBuf.split('\n');bleBuf=lines.pop();lines.forEach(parseLine);
+}
+function disconnectBLE(){S.bleDevice?.gatt?.connected&&S.bleDevice.gatt.disconnect();onDisc();}
+function onDisc(){setBLE(false);toast('BLE DESCONECTADO');}
+function setBLE(v){
+  S.connected=v;
+  document.getElementById('dotBle').className='dot'+(v?' on':'');
+  document.getElementById('lblBle').textContent=v?'CONECTADO':'DESCONECTADO';
+  const b=document.getElementById('btnBle');
+  b.textContent=v?'DESCON.':'BLE';
+  b.className='btn btn-ble'+(v?' disc':'');
+}
+</script>
+</body>
+</html>
