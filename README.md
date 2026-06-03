@@ -1,7 +1,7 @@
 # ImpactOS Monitor
 
 Sistema embarcado de detecção e monitoramento de impactos em tempo real, desenvolvido com Raspberry Pi Pico e transmissão de dados via Bluetooth Low Energy (BLE).
-
+Link vídeo YouTube: https://youtu.be/grMOWIprhys
 ---
 
 ## Sobre o Projeto
