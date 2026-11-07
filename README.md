@@ -45,7 +45,7 @@ O ImpactOS é um sistema de monitoramento contínuo de aceleração que detecta 
 
 | Pino Físico | GPIO | Periférico | Função |
 |---|---|---|---|
-| 1 | 3V3 | MPU-6050 | VCC |
+| 1 | 3V3 | MPU-6050 | VCC + AD0 (endereço I2C 0x69) |
 | 2 | 5V | Display | VCC |
 | 3 | GPIO2 | MPU-6050 + Display | I2C SDA |
 | 5 | GPIO3 | MPU-6050 + Display | I2C SCL |
@@ -53,11 +53,34 @@ O ImpactOS é um sistema de monitoramento contínuo de aceleração que detecta 
 | 9 | GND | GPS NEO-6M | GND |
 | 10 | GPIO15 | GPS NEO-6M | UART RX ← GPS TX |
 | 11 | GPIO17 | Buzzer | PWM |
-| 14 | GND | MPU-6050 AD0 | GND (endereço 0x68) |
 | 17 | 3V3 | GPS NEO-6M | VCC |
 | 20 | GND | Buzzer | GND |
 | 34 | GND | Display | GND |
 | DSI | — | Display | Cabo flat (tela) |
+
+### Endereços I2C
+
+O MPU-6050 e o display compartilham o barramento I2C (GPIO2/GPIO3), cada um com seu endereço:
+
+| Dispositivo | Endereço | Observação |
+|---|---|---|
+| MPU-6050 | `0x69` | AD0 ligado ao 3V3 (com AD0 no GND seria `0x68`) |
+| Display touchscreen | `0x38` | Controlador de toque |
+
+Por isso o `sensor_core.py` usa `MPU_ADDR = 0x69`.
+
+### Montagem
+
+Os componentes foram soldados em uma placa perfurada, conectada ao header GPIO do Pi 4. Os fios seguem um código de cores por componente:
+
+| Cor do fio | Componente |
+|---|---|
+| Azul | Acelerômetro MPU-6050 |
+| Laranja | Display 7" |
+| Verde | GPS NEO-6M |
+| Marrom | Buzzer |
+
+O display se conecta ao Pi pelo cabo flat (porta DSI) e pelos pinos 5V, GND, SDA e SCL, através de um conector lateral na placa.
 
 ### Software
 
@@ -132,6 +155,12 @@ sudo raspi-config
 cd ~/impactos
 python3 main.py
 ```
+
+#### Rede
+
+O dashboard precisa estar na mesma rede que o Pi e acessa o broker pelo IP dele (`hostname -I` no Pi), na porta 9001.
+
+Redes com isolamento de clientes (comum em Wi-Fi de faculdade e empresas) bloqueiam a comunicação direta entre dispositivos, e o dashboard não conecta. Nesse caso, conecte o Pi e o notebook ou celular ao **hotspot de um celular** e use o novo IP do Pi.
 
 #### Dependências
 
@@ -215,21 +244,26 @@ A principal motivação da migração foi eliminar a limitação do Bluetooth �
 ## Estrutura do Repositório
 
 ```
-impactos/
-├── v2/                          # Versão atual — Pi 4
-│   ├── main.py
-│   ├── sensor_core.py
-│   ├── data_logger.py
-│   ├── mqtt_publisher.py
-│   ├── display_ui.py
-│   ├── impactos.conf
-│   ├── requirements.txt
-│   └── impact-dashboard.html
+microcontroladores-detector-impacto/
+├── README.md
 │
-├── v1/                          # Versão original — Pi Pico
-│   └── impact_monitor.py
+├── main.py                      # v1 — firmware MicroPython do Pi Pico
+├── acelerometro.py              # v1 — teste do MPU-6050
+├── acelerometro+buzzer.py       # v1 — teste acelerômetro + buzzer
+├── buzzerapito.py               # v1 — teste do buzzer
+├── gps.py                       # v1 — teste do GPS
+├── bluetooth.py                 # v1 — teste do HC-08
+├── impact-dashboard.html        # v1 — dashboard Web Bluetooth
 │
-└── README.md
+└── v2/                          # Versão atual — Raspberry Pi 4 + MQTT
+    ├── main.py
+    ├── sensor_core.py
+    ├── data_logger.py
+    ├── mqtt_publisher.py
+    ├── display_ui.py
+    ├── requirements.txt
+    ├── impactos.conf
+    └── impact-dashboard.html    # dashboard via MQTT/WebSocket
 ```
 
 ---
