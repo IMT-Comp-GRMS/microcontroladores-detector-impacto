@@ -1,0 +1,7 @@
+# ImpactOS Monitor v2.0 — Dependências Raspberry Pi 4
+# Instalar com: pip install -r requirements.txt
+
+smbus2          # I2C — leitura do MPU-6050
+pyserial        # UART — leitura do GPS NEO-6M
+RPi.GPIO        # GPIO — controle do buzzer (PWM)
+paho-mqtt       # MQTT — publicação dos dados via Wi-Fi
