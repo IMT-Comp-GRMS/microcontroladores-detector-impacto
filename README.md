@@ -2,7 +2,9 @@
 
 Sistema embarcado de detecção e monitoramento de impactos em tempo real.
 
-📹 **Vídeo de demonstração (v1):** https://youtu.be/grMOWIprhys
+📹 **Vídeos de demonstração:**
+- v2 (Raspberry Pi 4 + MQTT): https://youtu.be/zHPBC74D3vM
+- v1 (Raspberry Pi Pico + Bluetooth): https://youtu.be/grMOWIprhys
 
 ---
 
@@ -40,6 +42,10 @@ O ImpactOS é um sistema de monitoramento contínuo de aceleração que detecta 
 | GPS | GY-NEO6MV2 (NEO-6M) | Localização com antena externa |
 | Buzzer | Buzzer ativo | Alarme sonoro |
 | Alimentação | Fonte 5V USB-C | Alimentação do Pi 4 |
+
+### Diagrama de blocos
+
+![Diagrama de blocos do hardware](docs/diagrama-blocos.png)
 
 ### Pinagem — Pi 4B
 
@@ -87,6 +93,8 @@ O display se conecta ao Pi pelo cabo flat (porta DSI) e pelos pinos 5V, GND, SDA
 Desenvolvido em **Python 3** para Raspberry Pi OS. Comunicação via protocolo **MQTT** sobre Wi-Fi, substituindo o Bluetooth da v1.
 
 #### Arquitetura
+
+![Arquitetura de software](docs/arquitetura.png)
 
 ```
 sensor_core.py    → lê MPU-6050 (I2C), GPS (UART), controla buzzer (PWM)
@@ -201,7 +209,7 @@ paho-mqtt   # MQTT — publicação Wi-Fi
 | VSYS | 39 | LDO AMS1117 | Entrada alimentação |
 | GND | 3,8,13,18,23,28,33,38 | Todos | Terra |
 
-### Software — MicroPython (`impact_monitor.py`)
+### Software — MicroPython (`main.py` na raiz)
 
 Loop principal a ~3.3 amostras por segundo:
 
@@ -243,26 +251,33 @@ A principal motivação da migração foi eliminar a limitação do Bluetooth �
 
 ## Estrutura do Repositório
 
+Os arquivos da v1 ficam na raiz do repositório e os da v2 na pasta `v2/`.
+
 ```
 microcontroladores-detector-impacto/
 ├── README.md
+├── IMG_7852.jpg                 # foto do grupo
+├── docs/                        # imagens do README
+│   ├── arquitetura.png
+│   └── diagrama-blocos.png
 │
-├── main.py                      # v1 — firmware MicroPython do Pi Pico
-├── acelerometro.py              # v1 — teste do MPU-6050
-├── acelerometro+buzzer.py       # v1 — teste acelerômetro + buzzer
-├── buzzerapito.py               # v1 — teste do buzzer
-├── gps.py                       # v1 — teste do GPS
-├── bluetooth.py                 # v1 — teste do HC-08
-├── impact-dashboard.html        # v1 — dashboard Web Bluetooth
+│   # v1 — Raspberry Pi Pico + Bluetooth
+├── main.py                      # firmware MicroPython (o único que roda)
+├── acelerometro.py              # teste do MPU-6050
+├── acelerometro+buzzer.py       # teste acelerômetro + buzzer
+├── buzzerapito.py               # teste do buzzer
+├── gps.py                       # teste do GPS
+├── bluetooth.py                 # teste do HC-08
+├── impact-dashboard.html        # dashboard Web Bluetooth
 │
 └── v2/                          # Versão atual — Raspberry Pi 4 + MQTT
-    ├── main.py
-    ├── sensor_core.py
-    ├── data_logger.py
-    ├── mqtt_publisher.py
-    ├── display_ui.py
+    ├── main.py                  # ponto de entrada
+    ├── sensor_core.py           # MPU-6050, GPS e buzzer
+    ├── data_logger.py           # registro em CSV
+    ├── mqtt_publisher.py        # publicação MQTT
+    ├── display_ui.py            # interface do display 7"
     ├── requirements.txt
-    ├── impactos.conf
+    ├── impactos.conf            # configuração do Mosquitto
     └── impact-dashboard.html    # dashboard via MQTT/WebSocket
 ```
 
